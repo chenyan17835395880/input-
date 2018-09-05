@@ -1,0 +1,90 @@
+////上传的input框
+<input type="file" id="imgFile1" name="myfile" class="upload_file">
+<input type="file" id="videoFile1" name="myfile" class="upload_file" >
+////上传文件的路径
+<input id="imgUrl1" name="firstImg" type="hidden" />
+<input id="videoUrl1" name="videopath" type="hidden"/>
+////用来显示上传的文件
+<img id="myImageShow1" />
+<input id="videofirstImg1" name="videofirstImg" type="hidden" />////视频第一帧图片
+<video id="videoShow1" controls="controls" style="margin-left:9px;width:450px;height:270px;"/></video>
+
+注意：无论是上传文件的input的id，还是上传文件路径的input的id，还是显示文件的id名，后面都要带有数字
+			                    		
+			                    		
+
+
+
+function upload(modelName) {
+	/////upload_file是input="type"的类名
+    $(document).on("change", ".upload_file", function () {
+    	////如果id中含有video，则视为是视频；如果含有img，则认为是图片，这是前后台的约定
+		////_id是是input="type"的id名
+        var _id = $(this).attr('id');
+        $.ajaxFileUpload({
+            url: window.GLOBAL_BASE_PATH + '/admin/fileUpload/uploadFile',
+			/////data里面的modelName是哪个模块的上传，domid是input的id
+            data: {modelName: modelName, domid: _id},
+            secureuri: false,
+            fileElementId: _id,
+            dataType:'json',
+            type: 'POST',
+            success: function (data) {
+                if (typeof data === "string") {
+                    data = JSON.parse(data);
+                }
+                if (data) {
+                    var temp = "";
+                    for (var i in data) {//用javascript的for/in循环遍历对象的属性
+                        temp += i + ":" + data[i] + "\n";
+                    }
+                    if (data.code == 500) {
+                        alert("上传失败");
+                        $('#'+_id).val('')
+                    }else if(data.code == 200){
+                    	alert('上传成功');
+                    }else if(data.code == 503){
+                    	alert('上传的类型不允许');
+                    	$('#'+_id).val('')
+                    	return;
+                    }else if(data.code == 504){
+                    	alert('上传的文件过大');
+                    	$('#'+_id).val('')
+                    	return;
+                    }
+                    //图片路径
+                    var returnPath = data.returnPath;
+                    //获取imgUrl之后的索引值 图片要指定索引  ,如果文件个数>9个的话，要修改此方法
+                    var index = _id.charAt(_id.length - 1);
+                    if(_id.indexOf('img') > -1){
+                    	$("#imgUrl" + index).val(returnPath);
+                        $("#myImageShow" + index).show();
+                        $("#myImageShow" + index).attr('src', returnPath).attr('width', '300px').attr('height', '180px');
+                    }
+                    
+                    //视频第一帧路径
+                    var returnFramePath = data.returnFramePath;
+                    if(_id.indexOf('video') > -1){
+                    	//图册单独的样式开始
+                    	$('.videodetails').removeClass('display1');
+                		$('.videodetails').addClass('display');
+                		$('#bigadd').removeClass('display');
+                		$('#bigadd').addClass('display1');
+                		//图册单独的样式结束
+                		
+                    	$('#videoUrl' + index).val(returnPath);
+                        $('#videofirstImg' + index).val(returnFramePath);
+                        $('#videoShow' + index).attr('src', returnPath).attr('width', '300px').attr('height', '180px');
+                    }
+                    
+                }
+            },
+            error: function (data) {
+                var des = "";
+                for (var name in data) {
+                    des += name + ":" + data[name] + ";";
+                }
+            }
+        });
+    })
+}
